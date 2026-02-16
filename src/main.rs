@@ -19,7 +19,16 @@ use project::Project;
     name = "projectctl",
     about = "Project switcher and development environment manager",
     version,
-    author = "Angel Samuel Suesca Rios <suescapsam@gmail.com>"
+    author = "Angel Samuel Suesca Rios <suescapsam@gmail.com>",
+    after_help = "\
+Common workflows:
+  Register project:     projectctl add --path ~/code/myapp
+  Switch context:       projectctl switch myapp
+  View all projects:    projectctl list --detailed
+  Start services:       projectctl start myapp
+  View recent:          projectctl recent
+  Create new project:   projectctl new myapp --template react-vite
+  Shell completions:    projectctl completions zsh >> ~/.zshrc"
 )]
 struct Cli {
     #[command(subcommand)]
@@ -29,6 +38,19 @@ struct Cli {
 #[derive(Subcommand)]
 enum Commands {
     /// List all registered projects
+    #[command(long_about = "\
+List all registered projects in a formatted table.
+
+Shows project name, type, status, and last-used time. Use filters to narrow
+results by type or running state. The --detailed flag adds paths, commands,
+and services for each project.
+
+Examples:
+  projectctl list                        # Show all projects
+  projectctl list --detailed             # Show with paths and commands
+  projectctl list -t fastapi             # Filter by type
+  projectctl list --active               # Only projects with running services
+  projectctl list -t react --detailed    # Combine filters")]
     List {
         /// Show detailed information
         #[arg(short, long)]
@@ -42,6 +64,19 @@ enum Commands {
     },
 
     /// Switch to a project
+    #[command(long_about = "\
+Switch to a project context.
+
+Displays the project directory, activates any detected Python virtualenv,
+shows git branch status, and optionally opens the project in VSCode.
+Supports fuzzy name matching (partial, prefix, or substring).
+
+Examples:
+  projectctl switch myapp                # Switch by name
+  projectctl switch my                   # Partial name match
+  projectctl switch --recent             # Switch to last used project
+  projectctl switch myapp --code         # Switch and open in VSCode
+  projectctl switch uniforme -c          # Fuzzy match + VSCode")]
     Switch {
         /// Project name (or partial match)
         name: Option<String>,
@@ -54,6 +89,19 @@ enum Commands {
     },
 
     /// Show project details
+    #[command(long_about = "\
+Show detailed information about a specific project.
+
+Displays project metadata, git status, running services, environment
+configuration, detected dependency managers, and custom commands. Use
+--path-only for shell scripting integration.
+
+Examples:
+  projectctl info myapp                  # Full project overview
+  projectctl info myapp --git            # Git info only
+  projectctl info myapp --deps           # Dependency info only
+  projectctl info myapp --path-only      # Print path (for scripts)
+  cd $(projectctl info myapp --path-only)  # Shell integration")]
     Info {
         /// Project name
         name: String,
@@ -69,6 +117,18 @@ enum Commands {
     },
 
     /// Start project services (Docker Compose)
+    #[command(long_about = "\
+Start Docker Compose services for a project.
+
+Runs 'docker compose up -d' in the project directory. Optionally start
+only a specific service by name. The project must have a docker-compose.yml
+or compose.yml file.
+
+Examples:
+  projectctl start myapp                 # Start all services
+  projectctl start myapp -s backend      # Start only backend service
+  projectctl start myapp -s postgres     # Start only the database
+  projectctl start uniforme --service redis  # Start Redis for a project")]
     Start {
         /// Project name
         name: String,
@@ -78,6 +138,16 @@ enum Commands {
     },
 
     /// Stop project services
+    #[command(long_about = "\
+Stop Docker Compose services for a project.
+
+Runs 'docker compose stop' (or 'docker compose stop <service>') in the
+project directory. Does not remove containers or volumes.
+
+Examples:
+  projectctl stop myapp                  # Stop all services
+  projectctl stop myapp -s backend       # Stop only backend
+  projectctl stop myapp --service redis  # Stop a specific service")]
     Stop {
         /// Project name
         name: String,
@@ -87,6 +157,16 @@ enum Commands {
     },
 
     /// Restart project services
+    #[command(long_about = "\
+Restart Docker Compose services for a project.
+
+Runs 'docker compose restart' in the project directory. Useful after
+configuration changes or when a service becomes unresponsive.
+
+Examples:
+  projectctl restart myapp               # Restart all services
+  projectctl restart myapp -s backend    # Restart only backend
+  projectctl restart myapp --service api # Restart a specific service")]
     Restart {
         /// Project name
         name: String,
@@ -96,6 +176,19 @@ enum Commands {
     },
 
     /// View service logs
+    #[command(long_about = "\
+View Docker Compose service logs for a project.
+
+Displays logs from running containers. Use --follow to stream logs in
+real time (like 'tail -f'). Control the number of historical lines shown
+with --lines.
+
+Examples:
+  projectctl logs myapp                  # Last 50 lines, all services
+  projectctl logs myapp -f               # Follow logs in real time
+  projectctl logs myapp -s backend -f    # Follow only backend logs
+  projectctl logs myapp -l 200           # Show last 200 lines
+  projectctl logs myapp -s api -l 100 -f  # Follow API with 100-line history")]
     Logs {
         /// Project name
         name: String,
@@ -111,12 +204,38 @@ enum Commands {
     },
 
     /// Dependency management
+    #[command(long_about = "\
+Manage project dependencies across your registered projects.
+
+Supports updating, checking for outdated packages, and viewing a summary
+of dependency managers across all projects. Works with npm, pip, cargo,
+and other detected package managers.
+
+Examples:
+  projectctl deps update myapp           # Update deps for one project
+  projectctl deps update --all           # Update deps for all projects
+  projectctl deps check myapp            # Check for outdated packages
+  projectctl deps check --all            # Check all projects
+  projectctl deps summary                # Overview of all dependency managers")]
     Deps {
         #[command(subcommand)]
         action: DepsAction,
     },
 
     /// Run a custom project command
+    #[command(long_about = "\
+Run a custom command defined in the project configuration.
+
+Commands are defined per-project in ~/.projectctl/projects.toml under
+[project.commands]. Use --list to see available commands for a project.
+The command is executed in the project's root directory.
+
+Examples:
+  projectctl run myapp dev               # Run the 'dev' command
+  projectctl run myapp test              # Run the 'test' command
+  projectctl run myapp build             # Run the 'build' command
+  projectctl run myapp --list            # List available commands
+  projectctl run myapp                   # Also lists commands (no args)")]
     Run {
         /// Project name
         name: String,
@@ -128,6 +247,20 @@ enum Commands {
     },
 
     /// Add a project
+    #[command(long_about = "\
+Register an existing project directory with projectctl.
+
+Auto-detects the project type (fastapi, react, tauri, rust, etc.),
+available services (from docker-compose), and common commands. If --path
+is omitted, the current directory is used. The project name defaults to
+the directory name.
+
+Examples:
+  projectctl add --path ~/code/myapp     # Register with auto-detect
+  projectctl add                         # Register current directory
+  projectctl add --name api --path ~/code/backend  # Custom name
+  projectctl add -p ~/code/app -t react  # Explicit type
+  projectctl add -n myproject -p . -t fastapi  # All options")]
     Add {
         /// Custom project name
         #[arg(short, long)]
@@ -141,12 +274,34 @@ enum Commands {
     },
 
     /// Remove a project from the registry
+    #[command(long_about = "\
+Remove a project from the projectctl registry.
+
+This only unregisters the project from projectctl's tracking. It does NOT
+delete the project directory or any files on disk. The project can be
+re-added later with 'projectctl add'.
+
+Examples:
+  projectctl remove myapp                # Remove by exact name
+  projectctl remove old-project          # Remove an unused project
+  projectctl remove test-api             # Clean up test projects")]
     Remove {
         /// Project name
         name: String,
     },
 
     /// Show recently used projects
+    #[command(long_about = "\
+Show recently used projects sorted by last access time.
+
+Displays projects ordered by when they were last switched to. Useful for
+quickly finding the project you were working on. The --limit flag controls
+how many entries to show.
+
+Examples:
+  projectctl recent                      # Show last 10 projects
+  projectctl recent -l 5                 # Show last 5 projects
+  projectctl recent --limit 20           # Show last 20 projects")]
     Recent {
         /// Maximum number of projects to show
         #[arg(short, long, default_value = "10")]
@@ -154,6 +309,19 @@ enum Commands {
     },
 
     /// Create a new project from a template
+    #[command(long_about = "\
+Scaffold a new project from a built-in or custom template.
+
+Creates a new directory with the project structure, configuration files,
+and boilerplate code from the chosen template. The project is automatically
+registered with projectctl after creation.
+
+Examples:
+  projectctl new myapp --template react-vite       # React + Vite project
+  projectctl new api --template fastapi             # FastAPI project
+  projectctl new desktop --template tauri           # Tauri desktop app
+  projectctl new myapp -t react-vite -d ~/projects  # Custom target dir
+  projectctl new cli -t rust                        # Rust CLI project")]
     New {
         /// Name for the new project
         name: String,
@@ -166,12 +334,35 @@ enum Commands {
     },
 
     /// Manage project templates
+    #[command(long_about = "\
+List and manage project templates.
+
+View built-in templates or add custom templates from local directories.
+Custom templates are stored in the projectctl configuration directory
+and can be used with 'projectctl new'.
+
+Examples:
+  projectctl templates                   # List all available templates
+  projectctl templates list              # Same as above
+  projectctl templates add mytemplate --path ~/templates/react-custom
+  projectctl templates add fastapi-full -p ~/templates/fastapi")]
     Templates {
         #[command(subcommand)]
         action: Option<TemplatesAction>,
     },
 
     /// Generate shell completions
+    #[command(long_about = "\
+Generate shell completion scripts for projectctl.
+
+Outputs completion script to stdout. Redirect to the appropriate file for
+your shell to enable tab-completion of commands, project names, and flags.
+
+Examples:
+  projectctl completions zsh >> ~/.zshrc           # Zsh completions
+  projectctl completions bash >> ~/.bashrc         # Bash completions
+  projectctl completions fish > ~/.config/fish/completions/projectctl.fish
+  source <(projectctl completions zsh)             # Load for current session")]
     Completions {
         /// Shell type
         shell: String,
@@ -214,8 +405,7 @@ enum TemplatesAction {
     List,
 }
 
-#[tokio::main]
-async fn main() -> Result<()> {
+fn main() -> Result<()> {
     let cli = Cli::parse();
     let config = ConfigManager::new()?;
     config.ensure_dirs()?;

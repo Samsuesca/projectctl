@@ -1,6 +1,6 @@
 [package]
 name = "projectctl"
-version = "0.1.0"
+version = "1.0.1"
 edition = "2021"
 authors = ["Angel Samuel Suesca Rios <suescapsam@gmail.com>"]
 description = "Project switcher and development environment manager"
@@ -18,7 +18,6 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 toml = "0.8"
 git2 = "0.19"
-tokio = { version = "1", features = ["full"] }
 colored = "2"
 tabled = "0.17"
 shellexpand = "3"
@@ -31,3 +30,5 @@ which = "7"
 opt-level = 3
 lto = true
 strip = true
+codegen-units = 1
+panic = "abort"

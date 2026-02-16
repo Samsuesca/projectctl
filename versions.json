@@ -1,0 +1,40 @@
+{
+  "name": "projectctl",
+  "version": "1.0.1",
+  "previous_versions": ["0.1.0"],
+  "edition": "2021",
+  "target": "aarch64-apple-darwin",
+  "repository": "https://github.com/Samsuesca/projectctl",
+  "author": "Angel Samuel Suesca Rios <suescapsam@gmail.com>",
+  "build": {
+    "lto": true,
+    "strip": true,
+    "opt_level": 3,
+    "codegen_units": 1,
+    "panic": "abort",
+    "binary_size": "1.9 MB"
+  },
+  "platform": {
+    "primary": "macOS (Apple Silicon M3)",
+    "supported": ["macOS", "Linux"]
+  },
+  "features": [
+    "Instant project switching with context",
+    "Auto-detection of project type and environment",
+    "Docker Compose service orchestration",
+    "Dependency management (npm/pip/cargo)",
+    "Git integration (branch, status, commits)",
+    "Custom per-project commands",
+    "Project templates (FastAPI, React, Tauri, Next.js)",
+    "Shell completion generation"
+  ],
+  "changelog": {
+    "1.0.1": [
+      "Removed unnecessary tokio dependency (zero async ops)",
+      "Added codegen-units=1 and panic=abort for smaller binary",
+      "Switched display to Style::rounded() for visual consistency",
+      "Added comprehensive help text with examples",
+      "Added versions.json for version tracking"
+    ]
+  }
+}

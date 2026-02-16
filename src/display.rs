@@ -48,7 +48,7 @@ pub fn display_project_list(projects: &[Project], detailed: bool) {
         .collect();
 
     let table = Table::new(&rows)
-        .with(Style::modern_rounded())
+        .with(Style::rounded())
         .to_string();
 
     println!("{}", table);

@@ -1,0 +1,59 @@
+# projectctl - Project management from terminal
+
+> macOS command-line utility (Rust)
+
+## Project Overview
+
+**Type:** Command-line utility (Rust)
+**Purpose:** Project management from terminal
+**Platform:** macOS (Apple Silicon & Intel)
+
+## Features
+
+- Project initialization
+- Task tracking
+- Time logging
+- Project status reports
+- Git integration
+- Template management
+
+## Development
+
+```bash
+# Build
+cargo build
+
+# Run
+cargo run -- [ARGS]
+
+# Test
+cargo test
+
+# Format and lint
+cargo fmt
+cargo clippy
+
+# Build release
+cargo build --release
+```
+
+## Installation
+
+```bash
+# Install locally
+cargo install --path .
+
+# Build and copy to system
+cargo build --release
+cp target/release/projectctl /usr/local/bin/
+```
+
+## Usage
+
+```bash
+# Show help
+projectctl --help
+
+# Show version
+projectctl --version
+```
