@@ -1,0 +1,33 @@
+[package]
+name = "projectctl"
+version = "0.1.0"
+edition = "2021"
+authors = ["Angel Samuel Suesca Rios <suescapsam@gmail.com>"]
+description = "Project switcher and development environment manager"
+license = "MIT"
+readme = "README.md"
+
+[[bin]]
+name = "projectctl"
+path = "src/main.rs"
+
+[dependencies]
+clap = { version = "4", features = ["derive"] }
+clap_complete = "4"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "0.8"
+git2 = "0.19"
+tokio = { version = "1", features = ["full"] }
+colored = "2"
+tabled = "0.17"
+shellexpand = "3"
+chrono = { version = "0.4", features = ["serde"] }
+dirs = "6"
+anyhow = "1"
+which = "7"
+
+[profile.release]
+opt-level = 3
+lto = true
+strip = true
